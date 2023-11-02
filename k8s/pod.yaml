@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "server-python"
+  labels:
+    name: "server-python"
+spec:
+  containers:
+  - name: py
+    image: "rafael/python:latest"
+
