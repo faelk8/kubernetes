@@ -6,5 +6,5 @@ metadata:
     name: "pyserver"
 spec:
   containers:
-  - name: py
-    image: "rafael/python:latest"
+  - name: py-server
+    image: "faelk8/hello-py:latest" # imagem docker no meu repositório
