@@ -4,7 +4,7 @@ metadata:
   name: pyserver
 spec:
   replicas: 3
-  selector:
+  selector: # seleciona pyserver
     matchLabels:
       app: pyserver
   template:
