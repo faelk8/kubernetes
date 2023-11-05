@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: "server-python"
+  name: "goserver"
   labels:
-    app: "server-python"
+    app: "goserver"
 spec:
   selector:
     matchLabels:
-      app: "server-python"
-  replicas: 5
+      app: "goserver"
+  replicas: 1
   template:
     metadata:
       labels: 
-        app: "server-python"
+        app: "goserver"
     spec:
       containers:
-        - name: py
-          image: "rafael/python:latest"
+        - name: goserver
+          image: "faelk8/hello-go:latest"
