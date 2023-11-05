@@ -5,10 +5,9 @@ metadata:
 spec:
   selector:
     app: pyserver
-  type: ClusterIP
+  type: LoadBalancer
   ports:
   - name: pyserver-server
     port: 8080 # pota do service
     #targetPort: 8080 # porto do conteiner - pode ser alterada - acessa pela porta 8080 e redireciona para a porta 8080 que pode ser qualquer porta
     protocol: TCP
-    
