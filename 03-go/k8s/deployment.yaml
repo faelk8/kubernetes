@@ -1,19 +1,44 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: "goserver"
+  name: goserver
   labels:
-    app: "goserver"
+    app: goserver
 spec:
   selector:
     matchLabels:
-      app: "goserver"
+      app: goserver
   replicas: 1
   template:
     metadata:
-      labels: 
-        app: "goserver"
+      labels:
+        app: goserver
     spec:
       containers:
         - name: goserver
-          image: "faelk8/hello-go:latest"
+          image: faelk8/hello-go:latest
+          envFrom:
+            - configMapRef:
+                name: goserver-env
+          env:
+            - name: USER
+              valueFrom:
+                secretKeyRef:
+                  name: goserver-secret
+                  key: USER
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: goserver-secret
+                  key: PASSWORD
+          volumeMounts:
+            - mountPath: "/go/myfamily"
+              name: config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: configmap-family
+            items:
+            - key: members
+              path: family.txt

@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: goserver
+  name: goserver-service
 spec:
   selector:
     app: goserver
   type: ClusterIP
   ports:
-    - name: server-porta
-      port: 8000
-      targetPort: 8000
-      protocol: TCP
+  - name: goserver-service
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
