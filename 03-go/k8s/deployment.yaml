@@ -17,9 +17,36 @@ spec:
       containers:
         - name: goserver
           image: faelk8/hello-go:latest
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000 # porta do conteiner não do serviço
+            periodSeconds: 3
+            failureThreshold: 1 # quantos erros antes de reiniciar
+            timeoutSeconds: 1 # tempo - precisa levar outros fatores em consideração
+            successThreshold: 1 # vezes para testar se está ok - 3
+            initialDelaySeconds: 10 # depois de 10 segundos que começa a verificar
+            
+          # livenessProbe: #ciclo de vida - erro
+          #   httpGet:
+          #     path: /healthz
+          #     port: 8000 # porta do conteiner não do serviço
+          #   periodSeconds: 5
+          #   failureThreshold: 3 # quantos erros antes de reiniciar
+          #   timeoutSeconds: 1 # tempo - precisa levar outros fatores em consideração
+          #   successThreshold: 1 # vezes para testar se está ok - 3
+
           envFrom:
             - configMapRef:
                 name: goserver-env
+            - secretRef:
+                name: goserver-secret
+
+          volumeMounts:
+            - mountPath: "/go/myfamily"
+              name: config
+              readOnly: true
+
           env:
             - name: USER
               valueFrom:
@@ -31,10 +58,7 @@ spec:
                 secretKeyRef:
                   name: goserver-secret
                   key: PASSWORD
-          volumeMounts:
-            - mountPath: "/go/myfamily"
-              name: config
-              readOnly: true
+
       volumes:
         - name: config
           configMap:
