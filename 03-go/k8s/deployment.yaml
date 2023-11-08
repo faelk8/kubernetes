@@ -17,24 +17,39 @@ spec:
       containers:
         - name: goserver
           image: faelk8/hello-go:latest
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 8000 # porta do conteiner não do serviço
-            periodSeconds: 3
-            failureThreshold: 1 # quantos erros antes de reiniciar
-            timeoutSeconds: 1 # tempo - precisa levar outros fatores em consideração
-            successThreshold: 1 # vezes para testar se está ok - 3
-            initialDelaySeconds: 10 # depois de 10 segundos que começa a verificar
-            
-          # livenessProbe: #ciclo de vida - erro
+
+          resources:
+            requests:
+              cpu: "0.3"
+              memory: 20Mi
+            limits:
+              cpu: "0.5"
+              memory: 25Mi
+
+          # startupProbe:
           #   httpGet:
           #     path: /healthz
-          #     port: 8000 # porta do conteiner não do serviço
+          #     port: 8000
+          #   periodSeconds: 4
+          #   failureThreshold: 30
+
+          # readinessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: 8000
+          #   periodSeconds: 3
+          #   failureThreshold: 1
+          #   # initialDelaySeconds: 10
+
+          # livenessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: 8000
           #   periodSeconds: 5
-          #   failureThreshold: 3 # quantos erros antes de reiniciar
-          #   timeoutSeconds: 1 # tempo - precisa levar outros fatores em consideração
-          #   successThreshold: 1 # vezes para testar se está ok - 3
+          #   failureThreshold: 1
+          #   timeoutSeconds: 1
+          #   successThreshold: 1
+          #   # initialDelaySeconds: 15              
 
           envFrom:
             - configMapRef:
