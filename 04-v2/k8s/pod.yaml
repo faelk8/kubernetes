@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "goserver"
+  labels:
+    name: "pyserver"
+spec:
+  containers:
+  - name: goserver
+    image: "faelk8/hello-go:v1" # imagem docker no meu repositório

@@ -7,23 +7,23 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: goserver
+      app: goserver    
   replicas: 1
   template:
     metadata:
       labels:
-        app: goserver
+        app: "goserver"
     spec:
       containers:
         - name: goserver
-          image: faelk8/hello-go:latest
+          image: "faelk8/hello-go:latest"
 
           resources:
-            requests:
-              cpu: "0.3"
+            requests: 
+              cpu: "0.2"
               memory: 20Mi
             limits:
-              cpu: "0.5"
+              cpu: "0.3"
               memory: 25Mi
 
           # startupProbe:
@@ -49,35 +49,30 @@ spec:
           #   failureThreshold: 1
           #   timeoutSeconds: 1
           #   successThreshold: 1
-          #   # initialDelaySeconds: 15              
+          #   # initialDelaySeconds: 15
 
           envFrom:
             - configMapRef:
                 name: goserver-env
             - secretRef:
                 name: goserver-secret
-
+          
           volumeMounts:
             - mountPath: "/go/myfamily"
               name: config
               readOnly: true
-
-          env:
-            - name: USER
-              valueFrom:
-                secretKeyRef:
-                  name: goserver-secret
-                  key: USER
-            - name: PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: goserver-secret
-                  key: PASSWORD
+            - mountPath: "/go/pvc"
+              name: goserver-volume
 
       volumes:
+        - name: goserver-volume
+          persistentVolumeClaim:
+            claimName: goserver-pvc
+
         - name: config
           configMap:
             name: configmap-family
             items:
             - key: members
-              path: family.txt
+              path: "family.txt"  
+      
