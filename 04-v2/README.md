@@ -434,6 +434,136 @@ kubectl apply -f k8s/deployment.yaml
 ```
 **Acessar:**  www.localhost:9090/secret
 
+# Health Check
+Verificar a saúde da aplicação. Até 25 segundos vai estar funcionando, depois vai apresentar erro, porém continua rodando.
+
+**Liveness**
+server.go
+```
+var startedAt = time.Now()
+
+func main() {
+	http.HandleFunc("/healthz", Healthz)
+  ...
+
+func Healthz(w http.ResponseWriter, r *http.Request) {
+	duration := time.Since(startedAt)
+	if duration.Seconds() > 25 {
+		w.WriteHeader(500)
+		w.Write([]byte(fmt.Sprintf("Duração: %v", duration.Seconds())))
+	} else {
+		w.WriteHeader(200)
+		w.Write([]byte("ok"))
+
+	}
+}  
+deployment.yaml
+```
+image: faelk8/hello-go:1.5
+```
+
+```
+Aplicando a alteração.
+```
+docker build -t faelk8/hello-go:1.5 . && docker push faelk8/hello-go:1.5
+kubectl apply -f k8s/deployment.yaml
+Kubectl port-forward svc/service-goserver  9000:9000
+```
+
+**LivenessProbe**
+3 formas.
+
+```
+      containers:
+        - name: goserver
+          image: faelk8/hello-go:1.5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9000
+            periodSeconds: 5
+            failureThreshold: 3
+            timeoutSeconds: 1
+            successThreshold: 1
+```
+
+Aplicar alteração e assistir os pods.
+```
+kubectl apply -f k8s/deployment.yaml && watch -n1 kubectl get pods
+```
+**Readiness**
+
+Verifica quando a aplicação está pronta.
+
+server.go
+```
+  if duration.Seconds() < 10 {
+    ...
+```
+deployment.yaml
+```
+image: faelk8/hello-go:1.5
+
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9000
+            periodSeconds: 3
+            failureThreshold: 1
+            timeoutSeconds: 1
+            successThreshold: 1
+            initialDelaySeconds: 10
+
+# Comentar o liveness
+```
+
+Aplciar alteração.
+```
+docker build -t faelk8/hello-go:1.6 . && docker push faelk8/hello-go:1.6
+kubectl apply -f k8s/deployment.yaml && watch -n1 kubectl get pods
+```
+
+Juntando as configurações.
+```
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9000
+            periodSeconds: 3
+            failureThreshold: 1
+            timeoutSeconds: 1
+            successThreshold: 1
+            initialDelaySeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9000
+            periodSeconds: 5
+            failureThreshold: 1
+            timeoutSeconds: 1
+            successThreshold: 1
+            initialDelaySeconds: 10
+```
+**startupProbe**
+
+Funciona somente no processo de verificação, quando fica pronto o readiness e o liveness começam a funcionar.
+
+Tempo de tentativa periodSeconds X failureThreshold.
+```
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 9000
+            periodSeconds: 3
+            failureThreshold: 10
+```
+Aplciar alteração.
+```
+kubectl apply -f k8s/deployment.yaml && watch -n1 kubectl get pods
+```
+Sempre utilizar o startupProbe.
+
 # Comandos
 
 | **Comandos** | **Descrição** |
@@ -442,9 +572,9 @@ kubectl apply -f k8s/deployment.yaml
 | kubectl apply -f k8s/pod.yaml | Cria um pod					| 
 | kubectl apply -f k8s/replicaset.yaml | Cria um pod com replicas| 
 | kubectl apply -f k8s/service.yaml | Inicia o service|
-o pod| 
 | kubectl delete goserver		| Delete o pod com o nome goserver | 
 | kubectl delete replicaset goserver | Deleta o replicaset com o nome goserver
+| kubectl describe pod <nome do pod>| Traz as informações do pod|
 | kubectl exec -it goserver-dc545f85f-p2lpm -- bash | Modo iterativo |
 | kubectl logs <nome> | Ver o log|
 | kubectl get nodes 		    | Mostra os nodes  				|
@@ -456,3 +586,4 @@ o pod|
 | kubectl port-forward svc/service-goserver 9000:9000| Libera a porta para o acesso do serviço|
 | kubectl rollout undo deploymente goserver| Mostra as versões do código|
 | kubectl rollout undo deployment goserver --to-revision=1| Volta para versão 1|
+| watch -n1 kubectl get pods | Assitir o pods em execusão|
