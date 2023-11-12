@@ -16,17 +16,20 @@ spec:
     spec:
       containers:
         - name: goserver
-          image: faelk8/hello-go:v1.3
+          image: faelk8/hello-go:v1.4
           envFrom:
             - configMapRef:
                 name: env-goserver
+            - secretRef:
+                name: secret-goserver
+
           volumeMounts:
             - mountPath: "/go/redessocias"
               name: config
       volumes:
         - name: config
           configMap: 
-            name: env-goserver-redes-socias
+            name: configmap-redes-sociais
             items:
             - key: members
               path: "redessocias.txt"

@@ -1,4 +1,3 @@
-# Versão 1
 # Iniciando o cluster Kubernetes 
 
 Arquivo kind com o código para a criação do cluster.
@@ -275,7 +274,6 @@ Lista de todos os serviços.
 kubectl proxy --port=8080
 ```
 
-# Versão 1.1
 
 # Variáveis de Ambiente
 Alterando o código go para incluir variáveis.
@@ -285,7 +283,7 @@ server.go
 func Hello(w http.ResponseWriter, r *http.Request) {
 	name := os.Getenv("NAME")
 	age := os.Getenv("AGE")
-	fmt.Fprint(w, "Hello, I'm %s. I'm %s", name, age)
+	fmt.Fprintf(w, "Hello, I'm %s. I'm %s", name, age)
 }
 ```
 
@@ -388,70 +386,53 @@ Acessando a aplicação.
 kubectl port-forward svc/service-goserver 9000:9000
 ```
 
-# Versão 1.3
 
-**Leitura de Arquivos**
+# Secret
+Oculta o valor mas não protege. Usa o base64. Não é criptografia.
 
 server.go
 ```
 func main() {
-	http.HandleFunc("/configmap", ConfigMap)
+	http.HandleFunc("/secret", Secret)
   ...
-}
 ```
-server.go
-```
-func ConfigMap(w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadFile("/go/redessocias/redessocias.txt")
-	if err != nil {
-		log.Fatalf("Erro ao ler o arquivo: ", err)
-	}
-	fmt.Fprint(w, "Minhas redes sociais: %s", string(data))
-}
-
-```
-config-map-redes-socias.yaml
+secret.yaml
 ```
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
-  name: env-goserver-redes-socias
+  name: secret-goserver
+type: Opaque
 data:
-  members: "https://www.kaggle.com/faelk8"
+  USER: "cmFmYWVsCg=="
+  PASSWORD: "MTIzNDU2NzgK"
 ```
-
-Criando o volume
-
+base64
+```
+echo "rafael" | base64
+echo "12345678" | base64
+```
 deployment.yaml
 ```
     spec:
       containers:
         - name: goserver
-          image: faelk8/hello-go:v1.3
+          image: faelk8/hello-go:v1.4
           envFrom:
             - configMapRef:
                 name: env-goserver
-          volumeMounts:
-            - mountPath: "/go/redessocias"
-              name: config
-      volume:
-        - name: config
-          configMap: 
-            name: env-goserver-redes-socias
-            items:
-            - key: members
-              path: "redessocias.txt"
+            - secretRef:
+                name: secret-goserver
 ```
 
-Build da imagem e push
+Aplicar alteração:
+```
+docker build -t faelk8/hello-go:v1.4 . && docker push faelk8/hello-go:v1.4
+kubectl apply -f k8s/secret.yaml
+kubectl apply -f k8s/deployment.yaml
 
 ```
-docker build -t faelk8/hello-go:v1.3 . && docker push faelk8/hello-go:v1.3
-kubectl apply -f k8s/configmap-redes-socias.yaml 
-kubectl port-forward svc/service-goserver  9000:9000
-
-```
-
+**Acessar:**  www.localhost:9090/secret
 
 # Comandos
 
