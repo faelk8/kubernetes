@@ -5,7 +5,7 @@ metadata:
   labels:
     app: goserver
 spec:
-  replicas: 5
+  replicas: 1
   selector:
     matchLabels:
       app: goserver
@@ -16,4 +16,17 @@ spec:
     spec:
       containers:
         - name: goserver
-          image: faelk8/hello-go:v1
+          image: faelk8/hello-go:v1.3
+          envFrom:
+            - configMapRef:
+                name: env-goserver
+          volumeMounts:
+            - mountPath: "/go/redessocias"
+              name: config
+      volumes:
+        - name: config
+          configMap: 
+            name: env-goserver-redes-socias
+            items:
+            - key: members
+              path: "redessocias.txt"

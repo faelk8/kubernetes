@@ -26,7 +26,6 @@ kind cluster-info --context kind-meu-cluster
 ```
 
 # Criando o servidor web em Go
-1.0
 server.go
 ```
 package main
@@ -35,7 +34,7 @@ import "net/http"
 
 func main() {
 	http.HandleFunc("/", Hello)
-	http.ListenAndServe(":80", nil)
+	http.ListenAndServe(":9000", nil)
 
 }
 
@@ -67,6 +66,7 @@ docker run --rm -p 8080:8080 faelk8/hello-go
 
 # Pod
 Menor objeto do Kubernetes, o container roda dentro do pod.
+
 pod.yaml
 ```
 apiVersion: v1
@@ -95,6 +95,8 @@ Para acessar  http://localhost:8080
 
 # Replica Set
 Cria replicas de pod, quando um pod cai o replicaset cria outro pod. Vai sempre manter a quantidade de pods ativos de acordo com o valor de replicas informado.
+
+replicaset.yaml
 ```
 apiVersion: apps/v1
 kind: ReplicaSet
@@ -125,6 +127,7 @@ kubectl apply -f k8s/replicaset.yaml
 
 # Deployment
 
+deployment.yaml
 Deployment cria o replicaset que cria o pod.
 Quando muda a versão do deployment ele derruba tudo e cria com a nova versão.
 
@@ -151,16 +154,324 @@ Para voltar para uma versão específica informando o número da versão.
 kubectl rollout undo deployment goserver --to-revision=1
 ```
 
+# Acessando o Services
+Atua como um load balancer gerenciado pelo próprio Kubernetes.
+
+**Cluster IP**
+
+service.yaml
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-goserver
+spec:
+  selector:
+    app: goserver
+  type: ClusterIP
+  ports:
+  - name: goserver-service
+    port: 9000
+    protocol: TCP
+```
+
+**name: serivce-goserver =  host**
+
+Comando para iniciar.
+```
+kubectl apply -f k8s/service.yaml
+```
+
+O service foi iniciado mas o acesso ainda precisa liberar a porta para acesso.
+```
+kubectl port-forward svc/service-goserver 9000:9000
+```
+
+**Target Port**
+
+Redirecionamento de porta. Quando acessar a porta 9000 o service redireciona para a porta 5000 do container.
+
+service.go
+```
+func main() {
+	http.HandleFunc("/", Hello)
+	http.ListenAndServe(":5000", nil)
+
+}
+```
+
+Aplicar alteração.
+```
+kubectl apply -f k8s/service.yaml
+```
+
+Aplicar alteração.
+```
+kubectl apply -f k8s/service.yaml
+```
+
+Comando para acesso.
+```
+kubectl port-forward svc/service-goserver 9000:9000
+```
+
+service.yaml
+```
+  - name: goserver-service
+    port: 9000
+    targetPort: 5000
+    protocol: TCP
+```
+
+**NodePort**
+
+Quando tem várias nodes trabalhando e se tem um acesso por uma porta específica todos os nodes liberam o acesso para aquela vai entrar no serviço.
+
+Utilizado para testes e serviços temporários.
+
+service.yaml
+```
+  - name: goserver-service
+    port: 9000
+    protocol: TCP
+    nodePort: 300001 #30.000 32.767
+```
+
+Aplicar alteração.
+```
+kubectl apply -f k8s/service.yaml
+```
+
+Comando para acesso.
+```
+kubectl port-forward svc/service-goserver 9000:9000
+```
+
+**Load Balancer**
+
+Gera um IP para acessar a aplicação de fora, utiizando para nuvem. Gera um PORT.
+
+service.yaml
+```
+  type: LoadBalancer
+```
+Aplicar alteração.
+```
+kubectl apply -f k8s/service.yaml
+```
+
+Comando para acesso.
+```
+kubectl port-forward svc/service-goserver 9000:9000
+```
+
+
+
+# Proxy 
+Acessando a rede interna do Kubernetes 
+
+Lista de todos os serviços.
+```
+kubectl proxy --port=8080
+```
+
+# Versão 1.1
+
+# Variáveis de Ambiente
+Alterando o código go para incluir variáveis.
+
+server.go
+```
+func Hello(w http.ResponseWriter, r *http.Request) {
+	name := os.Getenv("NAME")
+	age := os.Getenv("AGE")
+	fmt.Fprint(w, "Hello, I'm %s. I'm %s", name, age)
+}
+```
+
+deployment.yaml
+```
+      containers:
+        - name: goserver
+          image: faelk8/hello-go:v1.1
+          env: 
+            - name: NAME 
+              value: "Rafael"
+            - name: AGE 
+              value: "35"
+```
+Comandos para aplicar a atualização.
+```
+docker  build -t faelk8/hello-ho:v1.1 . && dockr push faelk8/hello-go:v1.1
+
+kubeclt apply -f k8s/deployment.yaml
+```
+Acessando o serviço.
+```
+kubectl port-forward svc/service-goserver 9000:9000
+```
+
+# Config Map
+Mapeando variáveis de ambiente.
+
+Forma mais simples.
+congigmap-env.yaml
+```
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: env-goserver
+data:
+  NAME: "Rafael"
+  AGE: "35"
+```
+
+Aplicando as alterações.
+```
+kubectl apply -f k8s/configmap-env.yaml
+kubectl apply -f f8s/deployment.yaml
+```
+Acessando a aplicação.
+```
+kubectl port-forward svc/service-goserver 9000:9000
+```
+
+Arquivos que armazena as variáveis de ambiente.
+
+deployment.yaml
+```
+      containers:
+        - name: goserver
+          image: faelk8/hello-go:v1.1
+          env: 
+            - name: NAME 
+              valueFrom: 
+                configMapKeyRef:
+                  name: env-goserver
+                  key: NAME
+            - name: AGE 
+              valueFrom: 
+                configMapKeyRef:
+                  name: env-goserver
+                  key: AGE
+```
+
+Aplicando as alterações.
+```
+kubectl apply -f k8s/configmap-env.yaml
+kubectl apply -f f8s/deployment.yaml
+```
+Acessando a aplicação.
+```
+kubectl port-forward svc/service-goserver 9000:9000
+```
+
+Forma mais avançada, carrega todas as variáveis de ambiente.
+deployment.yaml
+```
+    spec:
+      containers:
+        - name: goserver
+          image: faelk8/hello-go:v1.1
+          envFrom:
+            - configMapRef:
+                name: env-goserver
+```
+
+Aplicando as alterações.
+```
+kubectl apply -f k8s/configmap-env.yaml
+kubectl apply -f f8s/deployment.yaml
+```
+Acessando a aplicação.
+```
+kubectl port-forward svc/service-goserver 9000:9000
+```
+
+# Versão 1.3
+
+**Leitura de Arquivos**
+
+server.go
+```
+func main() {
+	http.HandleFunc("/configmap", ConfigMap)
+  ...
+}
+```
+server.go
+```
+func ConfigMap(w http.ResponseWriter, r *http.Request) {
+	data, err := ioutil.ReadFile("/go/redessocias/redessocias.txt")
+	if err != nil {
+		log.Fatalf("Erro ao ler o arquivo: ", err)
+	}
+	fmt.Fprint(w, "Minhas redes sociais: %s", string(data))
+}
+
+```
+config-map-redes-socias.yaml
+```
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: env-goserver-redes-socias
+data:
+  members: "https://www.kaggle.com/faelk8"
+```
+
+Criando o volume
+
+deployment.yaml
+```
+    spec:
+      containers:
+        - name: goserver
+          image: faelk8/hello-go:v1.3
+          envFrom:
+            - configMapRef:
+                name: env-goserver
+          volumeMounts:
+            - mountPath: "/go/redessocias"
+              name: config
+      volume:
+        - name: config
+          configMap: 
+            name: env-goserver-redes-socias
+            items:
+            - key: members
+              path: "redessocias.txt"
+```
+
+Build da imagem e push
+
+```
+docker build -t faelk8/hello-go:v1.3 . && docker push faelk8/hello-go:v1.3
+kubectl apply -f k8s/configmap-redes-socias.yaml 
+kubectl port-forward svc/service-goserver  9000:9000
+
+```
+
+
 # Comandos
 
 | **Comandos** | **Descrição** |
 |----------|---------------|
+| kubectl apply -f k8s/deploymente.yaml | Cria o replicaset que cria 
 | kubectl apply -f k8s/pod.yaml | Cria um pod					| 
 | kubectl apply -f k8s/replicaset.yaml | Cria um pod com replicas| 
-| kubectl apply -f k8s/deploymente.yaml | Cria o replicaset que cria o pod| 
+| kubectl apply -f k8s/service.yaml | Inicia o service|
+o pod| 
 | kubectl delete goserver		| Delete o pod com o nome goserver | 
 | kubectl delete replicaset goserver | Deleta o replicaset com o nome goserver
+| kubectl exec -it goserver-dc545f85f-p2lpm -- bash | Modo iterativo |
+| kubectl logs <nome> | Ver o log|
 | kubectl get nodes 		    | Mostra os nodes  				|
-| kubectl get replicaset 				| Mostra como está replicado|
 | kubectl get po 			    | Mostra os pods				|
 | kubectl get pods 				| Mostra os pods 				|
+| kubectl get replicaset 				| Mostra como está replicado|
+| kubectl get services | Mostra os services ativos, TYPE, CLUSTER-IP|
+| kubectl get svc | Mostra os services ativos |
+| kubectl port-forward svc/service-goserver 9000:9000| Libera a porta para o acesso do serviço|
+| kubectl rollout undo deploymente goserver| Mostra as versões do código|
+| kubectl rollout undo deployment goserver --to-revision=1| Volta para versão 1|
