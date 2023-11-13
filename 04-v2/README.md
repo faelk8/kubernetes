@@ -662,7 +662,101 @@ StorageClass disponibiliza um espaço em disco.
 
 Documentação: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
 
+Persistência
 
+pvc.yaml
+```
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: goserver-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+```
+deployment.yaml
+```
+          ...
+          volumeMounts:           
+            - mountPath: "/go/pvc"
+              name: goserver-volume
+              ...
+      volumes:
+        - name: goserver-volume
+          persistentVolumeClaim: 
+            claimName: goserver-pvc
+            ...
+```
+Aplicando alteração
+```
+kubectl apply -f k8s/pvc.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl get pvc # mostra os discos
+```
+
+# Statefulset
+Banco de dados com armazenamento em disco.
+
+statefulset.yaml
+```
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+spec:
+  replicas: 3
+  serviceName: mysql-h
+  selector:
+      matchLabels:
+        app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: root
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: mysql-volume
+
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-volume
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 5Gi
+```
+**"LoadBalance"** Com essa opção pode escolher o banco para gravar e outro para ler.
+
+service-mysql-h.yaml
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-h
+spec:
+  selector:
+    app: mysql
+  ports:
+  - port: 3306
+  clusterIP: None
+```
+Aplicando alteração
+```
+kubectl apply -f k8s/statefulset.yaml
+kubectl apply -f k8s/service-mysql-h.yaml
+```
 # Comandos
 
 | **Comandos** | **Descrição** |
@@ -671,8 +765,11 @@ Documentação: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
 | kubectl apply -f k8s/pod.yaml | Cria um pod					| 
 | kubectl apply -f k8s/replicaset.yaml | Cria um pod com replicas| 
 | kubectl apply -f k8s/service.yaml | Inicia o service|
+| kubectl config get-contexts | Mostra os cluster |
+| kubectl config use-contect < nome do serivço > | Para trocar de cluster |
 | kubectl delete goserver		| Delete o pod com o nome goserver | 
 | kubectl delete replicaset goserver | Deleta o replicaset com o nome goserver
+| kubectl delete statefulset < nomem > | Deleta o statefulset|
 | kubectl describe pod < nome do pod >| Traz as informações do pod|
 | kubectl exec -it goserver-dc545f85f-p2lpm -- bash | Modo iterativo |
 | kubectl logs < nome > | Ver o log|
@@ -681,9 +778,12 @@ Documentação: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
 | kubectl get pods 				| Mostra os pods 				|
 | kubectl get replicaset 				| Mostra como está replicado|
 | kubectl get services | Mostra os services ativos, TYPE, CLUSTER-IP|
+| kubectl get storageclass | Mostra os disco disponíveis |
 | kubectl get svc | Mostra os services ativos |
 | kubectl port-forward svc/service-goserver 9000:9000| Libera a porta para o acesso do serviço|
 | kubectl rollout undo deploymente goserver| Mostra as versões do código|
 | kubectl rollout undo deployment goserver --to-revision=1| Volta para versão 1|
+
+| kubectl scale statefulset mysql --replicas=5 | Replica de forma manual sem ordem |
 | kubectl top pod <nome do pod> | Mostra o quanto de recurso está sendo consumido |
-| watch -n1 kubectl get pods | Assitir o pods em execusão|
+| watch -n1 kubectl get pods | Assitir o pods em execução|

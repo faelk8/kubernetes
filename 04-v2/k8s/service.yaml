@@ -3,6 +3,7 @@ kind: Service
 metadata:
   name: service-goserver
 spec:
+  replicas: 3
   selector:
     app: goserver
   type: ClusterIP

@@ -60,7 +60,14 @@ spec:
           volumeMounts:
             - mountPath: "/go/redessocias"
               name: config
+            - mountPath: "/go/pvc"
+              name: goserver-volume
+
       volumes:
+        - name: goserver-volume
+          persistentVolumeClaim: 
+            claimName: goserver-pvc
+          
         - name: config
           configMap: 
             name: configmap-redes-sociais
