@@ -5,7 +5,7 @@ metadata:
   labels:
     app: goserver
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: goserver
@@ -16,7 +16,15 @@ spec:
     spec:
       containers:
         - name: goserver
-          image: faelk8/hello-go:1.7
+          image: faelk8/hello-go:1.8
+
+          resources:
+            requests: 
+              cpu: "0.05"
+              memory: 20Mi
+            limits:
+              cpu: "0.05"
+              memory: 25Mi
 
           startupProbe:
             httpGet:

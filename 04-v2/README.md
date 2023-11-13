@@ -199,12 +199,12 @@ func main() {
 }
 ```
 
-Aplicar alteração.
+Aplicando alteração.
 ```
 kubectl apply -f k8s/service.yaml
 ```
 
-Aplicar alteração.
+Aplicando alteração.
 ```
 kubectl apply -f k8s/service.yaml
 ```
@@ -236,7 +236,7 @@ service.yaml
     nodePort: 300001 #30.000 32.767
 ```
 
-Aplicar alteração.
+Aplicando alteração.
 ```
 kubectl apply -f k8s/service.yaml
 ```
@@ -254,7 +254,7 @@ service.yaml
 ```
   type: LoadBalancer
 ```
-Aplicar alteração.
+Aplicando alteração.
 ```
 kubectl apply -f k8s/service.yaml
 ```
@@ -298,7 +298,7 @@ deployment.yaml
             - name: AGE 
               value: "35"
 ```
-Comandos para aplicar a atualização.
+Comandos para Aplicando a atualização.
 ```
 docker  build -t faelk8/hello-ho:v1.1 . && dockr push faelk8/hello-go:v1.1
 
@@ -425,7 +425,7 @@ deployment.yaml
                 name: secret-goserver
 ```
 
-Aplicar alteração:
+Aplicando alteração:
 ```
 docker build -t faelk8/hello-go:v1.4 . && docker push faelk8/hello-go:v1.4
 kubectl apply -f k8s/secret.yaml
@@ -487,7 +487,7 @@ Kubectl port-forward svc/service-goserver  9000:9000
             successThreshold: 1
 ```
 
-Aplicar alteração e assistir os pods.
+Aplicando alteração e assistir os pods.
 ```
 kubectl apply -f k8s/deployment.yaml && watch -n1 kubectl get pods
 ```
@@ -564,6 +564,105 @@ kubectl apply -f k8s/deployment.yaml && watch -n1 kubectl get pods
 ```
 Sempre utilizar o startupProbe.
 
+# Auto Scaling
+Instalar o metrics server
+
+Repositório https://github.com/kubernetes-sigs/metrics-server
+
+Baixar https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+```
+cd k8s
+wget https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
+Renomear para metrics-server.yaml
+
+No deploymente do metrics-server.yaml adicionar **- --kubelet-insecure-tls**
+
+Aplicando alteração
+```
+kubectl apply -f metrics-server.yaml
+kubectl get apiservices # ver se está funcionando
+```
+Na saída do terminal precisa ter o **v1beta1.metrics.k8s.io** para confirmar que está ativo.
+
+# Recursos do Node
+
+Recurso mínimo para o funcionamento que fica reservado para o sistema. Levar em consideração a quantidade disponível do computador e tomar cuidado com a memória.
+```
+          resources:
+            requests: 
+              cpu: 100m
+              memory: 20Mi
+            limits:
+              cpu: 500m
+              memory: 25Mi
+```
+Ver o consumo de recursos
+```
+kubectl top pod < nome do pod >
+```
+
+# HPA
+Escla de forma horizontal.
+hpa.yaml
+```
+metadata:
+  name: hpa-goserver
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: goserver
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 35
+```
+
+# Remoção do erro
+server.go
+```
+func Healthz(w http.ResponseWriter, r *http.Request) {
+	duration := time.Since(startedAt)
+	if duration.Seconds() < 10 {
+		w.WriteHeader(500)
+		w.Write([]byte(fmt.Sprintf("Duração: %v", duration.Seconds())))
+	} else {
+		w.WriteHeader(200)
+		w.Write([]byte("ok"))
+	}
+}
+```
+Trocar a imagem no deployment.yaml
+```
+image: faelk8/hello-go:1.8
+```
+Aplicando alteração.
+```
+docker build -t faelk8/hello-go:1.8  . && docker push faelk8/hello-go:1.8
+kubectl apply -f k8s/deployment.yaml
+```
+
+# Teste de Estress
+Criando um pod para o teste.
+
+```
+kubectl run fortio --image=fortio/fortio --restart=Never --  load -qps 800 -t 120s -c 70 "http://service-goserver/healthz"
+
+```
+* kubectl run -it --generator=run-pod/v1: Gera um pod
+* fotio: Nome do pod
+* --rm: Remove quando o processo acabar
+* --image=fortio/fortio: Imagem do fortio
+* -- load -qps 800 -t 120s -c 70 "http://service-goserver/healthz" : Comando dentro do pod que executa 800 requisições por segundo por 120 segundos com 70 conexões simultâneas no endereço http://service-goserver/healthz
+
+# Armazenamento
+StorageClass disponibiliza um espaço em disco.
+* ReadWriteOnce: Pode ler, gravar desde que esteja no mesmo node.
+
+Documentação: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+
+
 # Comandos
 
 | **Comandos** | **Descrição** |
@@ -574,9 +673,9 @@ Sempre utilizar o startupProbe.
 | kubectl apply -f k8s/service.yaml | Inicia o service|
 | kubectl delete goserver		| Delete o pod com o nome goserver | 
 | kubectl delete replicaset goserver | Deleta o replicaset com o nome goserver
-| kubectl describe pod <nome do pod>| Traz as informações do pod|
+| kubectl describe pod < nome do pod >| Traz as informações do pod|
 | kubectl exec -it goserver-dc545f85f-p2lpm -- bash | Modo iterativo |
-| kubectl logs <nome> | Ver o log|
+| kubectl logs < nome > | Ver o log|
 | kubectl get nodes 		    | Mostra os nodes  				|
 | kubectl get po 			    | Mostra os pods				|
 | kubectl get pods 				| Mostra os pods 				|
@@ -586,4 +685,5 @@ Sempre utilizar o startupProbe.
 | kubectl port-forward svc/service-goserver 9000:9000| Libera a porta para o acesso do serviço|
 | kubectl rollout undo deploymente goserver| Mostra as versões do código|
 | kubectl rollout undo deployment goserver --to-revision=1| Volta para versão 1|
+| kubectl top pod <nome do pod> | Mostra o quanto de recurso está sendo consumido |
 | watch -n1 kubectl get pods | Assitir o pods em execusão|

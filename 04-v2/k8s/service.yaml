@@ -9,4 +9,5 @@ spec:
   ports:
   - name: goserver-service
     port: 9000
+    targetPort: 9000
     protocol: TCP
