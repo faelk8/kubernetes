@@ -812,6 +812,9 @@ Aplicando alteração.
 kubectl apply -f k8s/ingress.yaml
 ```
 Colocaro o **EXTERNAL-IP** no DNS da nuvem.
+
+service.yaml pode alterar para **type: Cluster IP** para economizar. Precisa deletar e criar novamente e não vai ter o **EXTERNAL-IP**.
+
 # Comandos
 
 | **Comandos** | **Descrição** |
