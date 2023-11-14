@@ -757,33 +757,87 @@ Aplicando alteração
 kubectl apply -f k8s/statefulset.yaml
 kubectl apply -f k8s/service-mysql-h.yaml
 ```
+
+# Ingress
+Cria um ponto único de acesso que faz roteamento para cada serviço. Atua como um load balancer com um IP. Por exemplo se tiver 5 serviços, quando acesssar o IP baseado no host name e no path encaminha para o serviço de acordo com o path.
+* IP/admin - Envia para o serviço admin;
+* IP/ajuda - Envia para o serviço ajuda;
+* IP/busca - Envia para o serviço busca;
+
+Lembra uma api gateway que faz o reteamento. 
+
+Proxy reverso que pega requisição e roteia para onde precisa.
+
+## Instalação
+
+Para ambiente em nuvem. Precisa acessar o serviço e enviar os arquivos.
+```
+kubectl apply -f k8s/
+```
+Após tudo rodando é possível ver o service rodando e ver o **EXTERNAL-IP**. Aplicação vai estar rodando no IP.
+```
+kubectl get svc
+```
+### ingress-nginx
+Instalar de acordo com a aplicação.
+
+Após instalação vai ter um **EXTERNAL-IP** que vai passar a ser usado.
+
+Código para a criação do ingress, quando acessar o serviço é encaminhado para o porta 8080.
+ingress.yaml
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-host
+  labels:
+    name: ingress-host
+  annotations:
+    kubernetex.io/ingress.class: "nginx" # Adaptador
+spec:
+  rules:
+  - host: "exemplo.com.br"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: service-goserver
+            port: 
+              number: 8080
+```
+Aplicando alteração.
+```
+kubectl apply -f k8s/ingress.yaml
+```
+Colocaro o **EXTERNAL-IP** no DNS da nuvem.
 # Comandos
 
 | **Comandos** | **Descrição** |
 |----------|---------------|
 | kubectl apply -f k8s/deploymente.yaml | Cria o replicaset que cria 
 | kubectl apply -f k8s/pod.yaml | Cria um pod					| 
-| kubectl apply -f k8s/replicaset.yaml | Cria um pod com replicas| 
-| kubectl apply -f k8s/service.yaml | Inicia o service|
+| kubectl apply -f k8s/replicaset.yaml | Cria um pod com replicas|  
+| kubectl apply -f k8s/service.yaml | Inicia o service |
 | kubectl config get-contexts | Mostra os cluster |
 | kubectl config use-contect < nome do serivço > | Para trocar de cluster |
 | kubectl delete goserver		| Delete o pod com o nome goserver | 
-| kubectl delete replicaset goserver | Deleta o replicaset com o nome goserver
-| kubectl delete statefulset < nomem > | Deleta o statefulset|
-| kubectl describe pod < nome do pod >| Traz as informações do pod|
+| kubectl delete replicaset goserver | Deleta o replicaset com o nome goserver |
+| kubectl delete statefulset < nomem > | Deleta o statefulset |
+| kubectl describe pod < nome do pod >| Traz as informações do pod |
 | kubectl exec -it goserver-dc545f85f-p2lpm -- bash | Modo iterativo |
 | kubectl logs < nome > | Ver o log|
 | kubectl get nodes 		    | Mostra os nodes  				|
 | kubectl get po 			    | Mostra os pods				|
 | kubectl get pods 				| Mostra os pods 				|
-| kubectl get replicaset 				| Mostra como está replicado|
-| kubectl get services | Mostra os services ativos, TYPE, CLUSTER-IP|
+| kubectl get replicaset 				| Mostra como está replicado |
+| kubectl get services | Mostra os services ativos, TYPE, CLUSTER- IP|
 | kubectl get storageclass | Mostra os disco disponíveis |
 | kubectl get svc | Mostra os services ativos |
-| kubectl port-forward svc/service-goserver 9000:9000| Libera a porta para o acesso do serviço|
-| kubectl rollout undo deploymente goserver| Mostra as versões do código|
-| kubectl rollout undo deployment goserver --to-revision=1| Volta para versão 1|
-
+| kubectl port-forward svc/service-goserver 9000:9000 | Libera a porta para o acesso do serviço |
+| kubectl rollout undo deploymente goserver | Mostra as versões do código |
+| kubectl rollout undo deployment goserver --to-revision=1 | Volta para versão 1|
 | kubectl scale statefulset mysql --replicas=5 | Replica de forma manual sem ordem |
 | kubectl top pod <nome do pod> | Mostra o quanto de recurso está sendo consumido |
-| watch -n1 kubectl get pods | Assitir o pods em execução|
+| watch -n1 kubectl get pods | Assitir o pods em execução |
