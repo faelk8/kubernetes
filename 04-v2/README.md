@@ -1,3 +1,40 @@
+<h1 align="center"> Kubernetes - Gerenciando um Server em GO</h1>
+
+<h1 align="center">
+  <img src="image/k8s-logo.png.png" alt="Kubernetes" width="200">
+  <br>
+  Kubernetes - Gerenciando um Server em GO
+</h1>
+
+
+1. [Iniciando o cluster Kubernetes](#iniciando-o-cluster-kubernetes)<br>
+  1.1 [Criando o servidor web em Go](#criando-o-servidor-web-em-go)<br>
+  1.2 [Construindo a Imagem](#construindo-a-imagem)<br>
+2. [Pod](#pod)<br>
+  2.1 [Replica Set](#replica-set)<br>
+  2.2 [Deployment](#deployment)<br>
+  2.3 [Rollout](#rollout)<br>
+3. [Acessando o Services](#acessando-o-services)<br>
+  3.1 [Proxy](#proxy)<br>
+  3.2 [Variáveis de Ambiente](#variáveis-de-ambiente)<br>
+  3.3 [Config Map](#config-map)<br>
+  3.4 [Secret](#secret)<br>
+4. [Health Check](#health-check)<br>
+5. [Auto Scaling](#auto-scaling)<br>
+6. [Recursos do Node](#recursos-do-node)<br>
+7. [HPA (Horizontal Pod Autoscaler)](#hpa-horizontal-pod-autoscaler)<br>
+8. [Remoção do erro](#remoção-do-erro)<br>
+9. [Teste de Estresse](#teste-de-estresse)<br>
+10. [Armazenamento](#armazenamento)<br>
+11. [Statefulset](#statefulset)<br>
+12. [Ingress](#ingress)<br>
+13. [Certificado TLS](#certificado-tls)<br>
+14. [Name Space](#name-space)<br>
+15. [Context](#context)<br>
+16. [Service Account](#service-account)<br>
+17. [Comandos](#comandos)<br>
+
+
 # Iniciando o cluster Kubernetes 
 
 Arquivo kind com o código para a criação do cluster.
@@ -33,7 +70,7 @@ import "net/http"
 
 func main() {
 	http.HandleFunc("/", Hello)
-	http.ListenAndServe(":9000", nil)
+	http.ListenAndServe(":8080", nil)
 
 }
 
@@ -170,7 +207,7 @@ spec:
   type: ClusterIP
   ports:
   - name: goserver-service
-    port: 9000
+    port: 8080
     protocol: TCP
 ```
 
@@ -183,12 +220,12 @@ kubectl apply -f k8s/service.yaml
 
 O service foi iniciado mas o acesso ainda precisa liberar a porta para acesso.
 ```
-kubectl port-forward svc/service-goserver 9000:9000
+kubectl port-forward svc/service-goserver 8080:8080
 ```
 
 **Target Port**
 
-Redirecionamento de porta. Quando acessar a porta 9000 o service redireciona para a porta 5000 do container.
+Redirecionamento de porta. Quando acessar a porta 8080 o service redireciona para a porta 5000 do container.
 
 service.go
 ```
@@ -211,13 +248,13 @@ kubectl apply -f k8s/service.yaml
 
 Comando para acesso.
 ```
-kubectl port-forward svc/service-goserver 9000:9000
+kubectl port-forward svc/service-goserver 8080:8080
 ```
 
 service.yaml
 ```
   - name: goserver-service
-    port: 9000
+    port: 8080
     targetPort: 5000
     protocol: TCP
 ```
@@ -231,7 +268,7 @@ Utilizado para testes e serviços temporários.
 service.yaml
 ```
   - name: goserver-service
-    port: 9000
+    port: 8080
     protocol: TCP
     nodePort: 300001 #30.000 32.767
 ```
@@ -243,7 +280,7 @@ kubectl apply -f k8s/service.yaml
 
 Comando para acesso.
 ```
-kubectl port-forward svc/service-goserver 9000:9000
+kubectl port-forward svc/service-goserver 8080:8080
 ```
 
 **Load Balancer**
@@ -261,7 +298,7 @@ kubectl apply -f k8s/service.yaml
 
 Comando para acesso.
 ```
-kubectl port-forward svc/service-goserver 9000:9000
+kubectl port-forward svc/service-goserver 8080:8080
 ```
 
 
@@ -306,7 +343,7 @@ kubeclt apply -f k8s/deployment.yaml
 ```
 Acessando o serviço.
 ```
-kubectl port-forward svc/service-goserver 9000:9000
+kubectl port-forward svc/service-goserver 8080:8080
 ```
 
 # Config Map
@@ -331,7 +368,7 @@ kubectl apply -f f8s/deployment.yaml
 ```
 Acessando a aplicação.
 ```
-kubectl port-forward svc/service-goserver 9000:9000
+kubectl port-forward svc/service-goserver 8080:8080
 ```
 
 Arquivos que armazena as variáveis de ambiente.
@@ -361,7 +398,7 @@ kubectl apply -f f8s/deployment.yaml
 ```
 Acessando a aplicação.
 ```
-kubectl port-forward svc/service-goserver 9000:9000
+kubectl port-forward svc/service-goserver 8080:8080
 ```
 
 Forma mais avançada, carrega todas as variáveis de ambiente.
@@ -383,7 +420,7 @@ kubectl apply -f f8s/deployment.yaml
 ```
 Acessando a aplicação.
 ```
-kubectl port-forward svc/service-goserver 9000:9000
+kubectl port-forward svc/service-goserver 8080:8080
 ```
 
 
@@ -467,7 +504,7 @@ Aplicando a alteração.
 ```
 docker build -t faelk8/hello-go:1.5 . && docker push faelk8/hello-go:1.5
 kubectl apply -f k8s/deployment.yaml
-Kubectl port-forward svc/service-goserver  9000:9000
+Kubectl port-forward svc/service-goserver  8080:8080
 ```
 
 **LivenessProbe**
@@ -480,7 +517,7 @@ Kubectl port-forward svc/service-goserver  9000:9000
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 9000
+              port: 8080
             periodSeconds: 5
             failureThreshold: 3
             timeoutSeconds: 1
@@ -507,7 +544,7 @@ image: faelk8/hello-go:1.5
           readinessProbe:
             httpGet:
               path: /healthz
-              port: 9000
+              port: 8080
             periodSeconds: 3
             failureThreshold: 1
             timeoutSeconds: 1
@@ -528,7 +565,7 @@ Juntando as configurações.
           readinessProbe:
             httpGet:
               path: /healthz
-              port: 9000
+              port: 8080
             periodSeconds: 3
             failureThreshold: 1
             timeoutSeconds: 1
@@ -538,7 +575,7 @@ Juntando as configurações.
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 9000
+              port: 8080
             periodSeconds: 5
             failureThreshold: 1
             timeoutSeconds: 1
@@ -554,7 +591,7 @@ Tempo de tentativa periodSeconds X failureThreshold.
           startupProbe:
             httpGet:
               path: /healthz
-              port: 9000
+              port: 8080
             periodSeconds: 3
             failureThreshold: 10
 ```
@@ -900,16 +937,102 @@ Quando for aplicar um novo deploymente basta incluir no final **-n=dev-kafka**:
 ```
 kubectl apply -f k8s/deployment.yaml -n=dev-kafka
 ```
+Olhando os pods no name espace:
+```
+kubectl get po -n=dev-kafka
+```
+Para ver todos os pods que tem o server:
+```
+kubectl get pods -l app=server
+```
+Outra forma é informar na especificação o name space.
+
+# Context
+Utilizado para separação em ambiente de desenvolvimento e produção.
+
+Para ver as configurações no **contexts** disponíveis.
+```
+kubectl config view
+```
+Criando um context:
+```
+kubectl config set-context dev --namespace=dev --cluster=jota --user=jota
+
+kubectl config set-context dev --namespace=prod --cluster=jota --user=jota
+```
+
+Ativando o context:
+```
+kubectl config use-context dev
+```
+
+# Service Account
+Configurando as permissões para o name space.
+
+security.yaml
+```
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: server
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: server-read
+rules:
+- apiGroups: [""]
+  resources: ["pods","services"] # o que pode trabalhar
+  verbs: ["get","watch","list"] # o que pode fazer
+- apiGroups: ["apps"]
+  resources: ["deployments"] # o que pode trabalhar
+  verbs: ["get","watch","list"] # o que pode fazer
+
+--- 
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: server-read-bind
+subjects:
+- kind: ServiceAccount
+  name: server
+  namespace: prod
+roleRef:
+  kind: Role
+  name: server-read
+  apiGroup: rbac.authorization.k8s.io/v1
+```
+Editar o deployment antes do container.
+deployment.yaml
+```
+...
+spec:
+  serviceAccount: server
+```
+
+Aplicando alteração:
+```
+kubectl apply -f security.yaml
+kubectl apply -f deployment.yaml
+```
+
+Para permissão em todo o cluster altere o kind para **ClusterRole** e **ClusterRoleBinding**.
+
 # Comandos
 
 | **Comandos** | **Descrição** |
 |----------|---------------|
+| kubectl api-resources | Mostra  os recursos |
 | kubectl apply -f k8s/deploymente.yaml | Cria o replicaset que cria 
 | kubectl apply -f k8s/pod.yaml | Cria um pod					| 
 | kubectl apply -f k8s/replicaset.yaml | Cria um pod com replicas|  
 | kubectl apply -f k8s/service.yaml | Inicia o service |
-| kubectl config get-contexts | Mostra os cluster |
-| kubectl config use-contect < nome do serivço > | Para trocar de cluster |
+| kubectl config get-contexts | Mostra todos os cluster |
+| kubectl config use-context  | Mostra o cluster atual |
+| kubectl config use-context < nome do serivço > | Para trocar de cluster |
 | kubectl delete goserver		| Delete o pod com o nome goserver | 
 | kubectl delete replicaset goserver | Deleta o replicaset com o nome goserver |
 | kubectl delete statefulset < nomem > | Deleta o statefulset |
@@ -921,13 +1044,20 @@ kubectl apply -f k8s/deployment.yaml -n=dev-kafka
 | kubectl get ns 		    | Mostra os names espace  				|
 | kubectl get po 			    | Mostra os pods				|
 | kubectl get pods 				| Mostra os pods 				|
+| kubectl get pods l- app=server | Mostra todos os pods com o nome server, independente do name space	|
 | kubectl get replicaset 				| Mostra como está replicado |
 | kubectl get services | Mostra os services ativos, TYPE, CLUSTER- IP|
 | kubectl get storageclass | Mostra os disco disponíveis |
 | kubectl get svc | Mostra os services ativos |
-| kubectl port-forward svc/service-goserver 9000:9000 | Libera a porta para o acesso do serviço |
+| kubectl port-forward svc/service-goserver 8080:8080 | Libera a porta para o acesso do serviço |
 | kubectl rollout undo deploymente goserver | Mostra as versões do código |
 | kubectl rollout undo deployment goserver --to-revision=1 | Volta para versão 1|
 | kubectl scale statefulset mysql --replicas=5 | Replica de forma manual sem ordem |
 | kubectl top pod <nome do pod> | Mostra o quanto de recurso está sendo consumido |
 | watch -n1 kubectl get pods | Assitir o pods em execução |
+
+## Configurações
+| **Comandos** | **Descrição** |
+|----------|---------------|
+| cat ~/.kube/config | Mostra as configurações |
+| kubectl config view| Mostra as configurações do cluster do name space default |
