@@ -815,6 +815,91 @@ Colocaro o **EXTERNAL-IP** no DNS da nuvem.
 
 service.yaml pode alterar para **type: Cluster IP** para economizar. Precisa deletar e criar novamente e não vai ter o **EXTERNAL-IP**.
 
+# Certificado TLS
+Esse certificado é gratuito e quando expirado é renovado de forma automática.
+
+Seguir os passos para instalação.
+
+https://cert-manager.io/docs/installation/kubectl/
+
+Comando para ver
+```
+kubectl get po -n cert-manager
+```
+
+cluster-issuer.yaml
+```
+apiVersion: cert-manager.io/v1alpha2
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+  namespace: cert-manager
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: meu@email.com
+    privateKeySecretRef:
+      name: letsencrypt-tls # nome que preferir
+    solver: 
+      - http01:
+        ingress: 
+          class: nginx
+```
+
+Alteração do ingress.
+ingress.yaml
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-host
+  labels:
+    name: ingress-host
+  annotations:
+    kubernetex.io/ingress.class: "nginx" # Adaptador
+    cert-manager.io/cluster-issuer: letsencrypt
+    ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  rules:
+  - host: "exemplo.com.br"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: service-goserver
+            port: 
+              number: 8080
+  tls:
+  - hosts:
+    - "exemplo.com.br"
+    secretName: letsencrypt-tls
+```
+
+
+Aplicando a alteração
+```
+kubectl apply -f k8s/cluster-issuer.yaml
+kubectl apply -f k8s/ingress.yaml
+kubectl get certificates # mostra os certificados
+```
+Para ver os detalhes do certificado informando seu nome.
+```
+kubectl describe certificate letsencrypt-tls
+```
+
+# Name Space
+Recomendado ter um cluster para ambiente de desenvolvimento e um para produção. Na falta de recursos ter names spaces separados em desenvolvimento e produção.
+
+Criando um name space de dev-kafka.
+```
+kubectl create ns dev-kafka
+```
+Quando for aplicar um novo deploymente basta incluir no final **-n=dev-kafka**:
+```
+kubectl apply -f k8s/deployment.yaml -n=dev-kafka
+```
 # Comandos
 
 | **Comandos** | **Descrição** |
@@ -831,7 +916,9 @@ service.yaml pode alterar para **type: Cluster IP** para economizar. Precisa del
 | kubectl describe pod < nome do pod >| Traz as informações do pod |
 | kubectl exec -it goserver-dc545f85f-p2lpm -- bash | Modo iterativo |
 | kubectl logs < nome > | Ver o log|
+| kubectl get certificates 				| Mostra os certificados instalados |
 | kubectl get nodes 		    | Mostra os nodes  				|
+| kubectl get ns 		    | Mostra os names espace  				|
 | kubectl get po 			    | Mostra os pods				|
 | kubectl get pods 				| Mostra os pods 				|
 | kubectl get replicaset 				| Mostra como está replicado |
