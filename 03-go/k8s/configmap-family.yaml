@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: configmap-family
-data:
-  members: "Pessoa1, Pessoa2, Pessoa3"

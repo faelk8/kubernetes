@@ -1,11 +1,15 @@
-<h1 align="center"> Kubernetes - Gerenciando um Server em GO</h1>
-
 <h1 align="center">
-  <img src="image/k8s-logo.png.png" alt="Kubernetes" width="200">
+  <img src="image/k8s-logo.png" alt="Kubernetes" width=120px height=120px >
   <br>
-  Kubernetes - Gerenciando um Server em GO
+  Kubernetes - Gerenciando um Server em Go
 </h1>
 
+<div align="center">
+
+[![Status](https://img.shields.io/badge/version-1.0-blue)]()
+[![Status](https://img.shields.io/badge/status-active-success.svg)]()
+
+</div>
 
 1. [Iniciando o cluster Kubernetes](#iniciando-o-cluster-kubernetes)<br>
   1.1 [Criando o servidor web em Go](#criando-o-servidor-web-em-go)<br>
@@ -87,14 +91,14 @@ go 1.18
 ```
 
 # Construindo a Imagem 
-Build da imagem e push
+Build da imagem e push utilizando Docker.
 
 ```
 docker build -t faelk8/hello-go . && docker push faelk8/hello-go:v1
 
 ```
 
-Executar o container
+Executar o container liberando a porta 8080.
 ```
 docker run --rm -p 8080:8080 faelk8/hello-go
 
@@ -162,15 +166,11 @@ kubectl apply -f k8s/replicaset.yaml
 > Quando atualizar o código do replicaset e fazer um novo apply as mudanças não são aplicadas, para funcionar precisa deletar todos os pods para que sejam recriados com a nova versão.
 
 # Deployment
+* Deployment cria o replicaset que cria o pod.
+* Quando muda a versão do deployment ele derruba tudo e cria com a nova versão.
+* Resolve o problema do replica set.
 
-deployment.yaml
-Deployment cria o replicaset que cria o pod.
-Quando muda a versão do deployment ele derruba tudo e cria com a nova versão.
-
-Para criar um deployment basta mudar o valo do kind.
-```
-kind: Deployment
-```
+Para criar um deployment basta mudar o valo do **kind: Deployment**.
 
 # Rollout
 Quando a versão atual apresenta algum problema e precisa voltar para a versão anterior.
@@ -218,10 +218,11 @@ Comando para iniciar.
 kubectl apply -f k8s/service.yaml
 ```
 
-O service foi iniciado mas o acesso ainda precisa liberar a porta para acesso.
+O service foi iniciado mas o acesso ainda precisa ser liberado, o comando libera o acesso na porta 8080.
 ```
 kubectl port-forward svc/service-goserver 8080:8080
 ```
+http://localhost:8080
 
 **Target Port**
 
@@ -240,12 +241,6 @@ Aplicando alteração.
 ```
 kubectl apply -f k8s/service.yaml
 ```
-
-Aplicando alteração.
-```
-kubectl apply -f k8s/service.yaml
-```
-
 Comando para acesso.
 ```
 kubectl port-forward svc/service-goserver 8080:8080
@@ -261,7 +256,7 @@ service.yaml
 
 **NodePort**
 
-Quando tem várias nodes trabalhando e se tem um acesso por uma porta específica todos os nodes liberam o acesso para aquela vai entrar no serviço.
+Quando tem várias nodes trabalhando e se tem um acesso por uma porta específica todos os nodes liberam o acesso para aquela porta que vai entrar no serviço.
 
 Utilizado para testes e serviços temporários.
 
@@ -335,7 +330,7 @@ deployment.yaml
             - name: AGE 
               value: "35"
 ```
-Comandos para Aplicando a atualização.
+Aplicando a atualização.
 ```
 docker  build -t faelk8/hello-ho:v1.1 . && dockr push faelk8/hello-go:v1.1
 
@@ -350,7 +345,8 @@ kubectl port-forward svc/service-goserver 8080:8080
 Mapeando variáveis de ambiente.
 
 Forma mais simples.
-congigmap-env.yaml
+
+configmap-env.yaml
 ```
 apiVersion: v1
 kind: ConfigMap
@@ -401,7 +397,8 @@ Acessando a aplicação.
 kubectl port-forward svc/service-goserver 8080:8080
 ```
 
-Forma mais avançada, carrega todas as variáveis de ambiente.
+Forma mais avançada, carrega todas as variáveis de ambiente. Substitui o deployment anterior.
+
 deployment.yaml
 ```
     spec:
@@ -467,14 +464,14 @@ Aplicando alteração:
 docker build -t faelk8/hello-go:v1.4 . && docker push faelk8/hello-go:v1.4
 kubectl apply -f k8s/secret.yaml
 kubectl apply -f k8s/deployment.yaml
-
+Kubectl port-forward svc/service-goserver  8080:8080
 ```
-**Acessar:**  www.localhost:9090/secret
+**Acessar:**  www.localhost:8080/secret
 
 # Health Check
 Verificar a saúde da aplicação. Até 25 segundos vai estar funcionando, depois vai apresentar erro, porém continua rodando.
 
-**Liveness**
+## Liveness
 server.go
 ```
 var startedAt = time.Now()
@@ -507,8 +504,7 @@ kubectl apply -f k8s/deployment.yaml
 Kubectl port-forward svc/service-goserver  8080:8080
 ```
 
-**LivenessProbe**
-3 formas.
+## LivenessProbe
 
 ```
       containers:
@@ -641,7 +637,8 @@ kubectl top pod < nome do pod >
 ```
 
 # HPA
-Escla de forma horizontal.
+Escla de forma horizontal, adiocando novos pods de acordo com o programado.
+
 hpa.yaml
 ```
 metadata:
@@ -687,6 +684,7 @@ Criando um pod para o teste.
 kubectl run fortio --image=fortio/fortio --restart=Never --  load -qps 800 -t 120s -c 70 "http://service-goserver/healthz"
 
 ```
+Explicação do comando:
 * kubectl run -it --generator=run-pod/v1: Gera um pod
 * fotio: Nome do pod
 * --rm: Remove quando o processo acabar
@@ -821,6 +819,7 @@ Instalar de acordo com a aplicação.
 Após instalação vai ter um **EXTERNAL-IP** que vai passar a ser usado.
 
 Código para a criação do ingress, quando acessar o serviço é encaminhado para o porta 8080.
+
 ingress.yaml
 ```
 apiVersion: networking.k8s.io/v1
@@ -848,7 +847,7 @@ Aplicando alteração.
 ```
 kubectl apply -f k8s/ingress.yaml
 ```
-Colocaro o **EXTERNAL-IP** no DNS da nuvem.
+Colocar o **EXTERNAL-IP** no DNS da nuvem.
 
 service.yaml pode alterar para **type: Cluster IP** para economizar. Precisa deletar e criar novamente e não vai ter o **EXTERNAL-IP**.
 
@@ -928,6 +927,8 @@ kubectl describe certificate letsencrypt-tls
 
 # Name Space
 Recomendado ter um cluster para ambiente de desenvolvimento e um para produção. Na falta de recursos ter names spaces separados em desenvolvimento e produção.
+
+**Apartir desse pontos comando executados dentro da pasta namespace.**
 
 Criando um name space de dev-kafka.
 ```
