@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-kafka-ui
+  namespace: kafka
+spec:
+  selector:
+    matchLabels:
+      app: cluster-kafka-ui
+  template:
+    metadata:
+      labels:
+        app: cluster-kafka-ui
+    spec:
+      containers:
+        - image: provectuslabs/kafka-ui:v0.4.0
+          name: kafka-ui
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KAFKA_CLUSTERS_0_NAME
+              value: "cluster"
+            - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+              value: "cluster-kafka-bootstrap:9092"
+            - name: KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL
+              value: SASL_PLAINTEXT
+            - name: KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM
+              value: SCRAM-SHA-512
+            - name: KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG
+              value: 'org.apache.kafka.common.security.scram.ScramLoginModule required username="admin" password="XSnBiq6pkFNp";'
+            # LDAP auth
+            - name: AUTH_TYPE
+              value: LDAP
+            - name: SPRING_LDAP_URLS
+              value: ldaps://myldapinstance.company:636
+            - name: SPRING_LDAP_DN_PATTERN
+              value: uid={0},ou=People,dc=company
+            - name: SPRING_LDAP_ADMINUSER
+              value: uid=admin,ou=Apps,dc=company
+            - name: SPRING_LDAP_ADMINPASSWORD
+              value: Adm1nP@ssw0rd!
+            # Custom truststore for ldaps
+            - name: JAVA_OPTS
+              value: "-Djdk.tls.client.cipherSuites=TLS_RSA_WITH_AES_128_GCM_SHA256 -Djavax.net.ssl.trustStore=/etc/kafka-ui/ssl/truststore.jks"
+          volumeMounts:
+            - name: truststore
+              mountPath: /etc/kafka-ui/ssl
+              readOnly: true
+      volumes:
+        - name: truststore
+          secret:
+            secretName: myldap-truststore
