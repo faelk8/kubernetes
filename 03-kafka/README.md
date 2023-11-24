@@ -2,12 +2,12 @@
   <img src="../image/k8s-logo.png" alt="Kubernetes" width=120px height=120px >
   <img src="../image/kafka.png" alt="Kubernetes" width=120px height=120px >
   <br>
-  Kubernetes - Gerenciando um Server em Go
+  Kubernetes Kafka
 </h1>
 
 <div align="center">
 
-[![Status](https://img.shields.io/badge/version-1.0-blue)]()
+[![Status](https://img.shields.io/badge/version-0.1-blue)]()
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 
 </div>
