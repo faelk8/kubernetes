@@ -1,8 +1,7 @@
 <h1 align="center">
   <img src="../image/k8s-logo.png" alt="Kubernetes" width=120px height=120px >
   <br>
-  Kubernetes - Gerenciando um Server em Go
-</h1>
+  Kubernetes - Parte 1
 
 <div align="center">
 
@@ -76,7 +75,6 @@ kubectl apply -f k8s/pod.yaml
 
 <h1 align="center">
   <img src="../image/Service.png" alt="Kubernetes" width=600px height=400px >
-  <br>
 </h1>
 
 ## ClusterIP
@@ -125,6 +123,11 @@ spec:
       targetPort: 80 
 ```
 ## NodeIP
+<h1 align="center">
+  <img src="../image/nodeIP.png" alt="Kubernetes" width=620px height=420px >
+</h1>
+
+
 * Service que permite a comunicação com o mundo externo. 
 * Funciona como ClusterIP. 
 * Dentro do cluster permite que as máquinas se comuniquem.
@@ -182,6 +185,10 @@ No `INTERNAL-IP` vai mostrar o IP para acessar a aplicação.
 * **Windows**: http://localhost:30000
 
 ## Load Balancer
+<h1 align="center">
+  <img src="../image/provedor.png" alt="Kubernetes" width=620px height=420px >
+</h1>
+
 Serviço para aplicações na nuvem. Abre a comunicação para o mundo externo usando o load balancer do provedor.<br>
 `svc-load-balancer.yaml`
 * `port: 80` porta roda o serviço.
@@ -200,13 +207,27 @@ spec:
     app: primeiro-pod
 ```
 
+# ConfigMap
+Armazena as variáveis de ambiente que podem ser usadas por outros recursos.
+* Permite reutilização.
+* Desacoplamento.
+
+# Portal de Notícias
+<h1 align="center">
+  <img src="../image/noticia.png" alt="Kubernetes" width=620px height=420px >
+</h1>
+
+
+
 # Comandos
 
 | **Comandos** | **Descrição** |
 |----------|---------------|
 | kubectl api-resources | Mostra  os recursos |
 | kubectl apply -f < nome > | Para aplicar o arquivo |
-| kubectl delete pod < nome > | Delete o pod |
+| kubectl delete pods < nome > | Delete o pod |
+| kubectl delete pods --all | Delete todos os pods |
+| kubectl delete svc --all | Delete todos os serviços |
 | kubectl describe pod < nome > | Mostra as informaçoes |
 | kubectl exec -it < nome do pod > -- bash | Entra no modo interativo |
 | kubectl get po | Mostra os pods ativos |
