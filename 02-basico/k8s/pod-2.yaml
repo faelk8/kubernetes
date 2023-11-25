@@ -3,7 +3,7 @@ kind: Pod
 metadata: 
   name: pod-2
   labels:
-    app: segundo-pod  
+    app: segundo-pod # svc-pode2.yaml utiliza para saber com quem ele deve se comunicar
 spec: 
   containers:
     - name: container-pod-2

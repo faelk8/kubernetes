@@ -72,12 +72,133 @@ Aplicando
 kubectl apply -f k8s/pod.yaml
 ```
 
-# Trabalhando com SVC
-* Abstração para expor aplicaçãoes executando em um ou mais pods
-* Provem IP's fixos para comunicação
-* Provem um DNS para um ou mais pods
-* São capazes de fazer balanceamento de carga
+# Trabalhando com Service (SVC)
 
+<h1 align="center">
+  <img src="../image/Service.png" alt="Kubernetes" width=600px height=400px >
+  <br>
+</h1>
+
+## ClusterIP
+Mecanimos de comunicação interna dos pods utilizando o `type: ClusterIP` com o `type: ClusterIP`. 
+* Abstração para expor aplicaçãoes executando em um ou mais pods.
+* Provem IP's fixos para comunicação.
+* Provem um DNS para um ou mais pods.
+* São capazes de fazer balanceamento de carga.
+* Usa labels para identificação que pode ser qualquer nome e valor.
+* Ouve em uma parta e envia em outra porta.
+
+`pod-2.yaml`
+ * `app: segundo-pod` label do service para comunicação.
+ * `containerPort: 80` porta que ouve a comunicação.
+```
+apiVersion: v1 
+kind: Pod 
+metadata: 
+  name: pod-2
+  labels:
+    app: segundo-pod # svc-pode2.yaml utiliza para saber com quem ele deve se comunicar
+spec: 
+  containers:
+    - name: container-pod-2
+      image: nginx:latest
+      ports: 
+        - containerPort: 80
+```
+
+`svc-pode-2.yaml`
+* `selector` local onde informa o label para comunicação.
+* `port: 9000` porta que ouve.
+* `targetPort: 80` porta que envia.
+
+```
+apiVersion: v1 
+kind: Service
+metadata:
+  name: svc-pod-2
+spec:
+  type: ClusterIP
+  selector:
+    app: segundo-pod
+  ports:
+    - port: 9000 
+      targetPort: 80 
+```
+## NodeIP
+* Service que permite a comunicação com o mundo externo. 
+* Funciona como ClusterIP. 
+* Dentro do cluster permite que as máquinas se comuniquem.
+
+
+`pod-1.yaml`
+* `app: primeiro-pod` label de identificação.
+* `containerPort: 80` porta de comunicação.
+```
+apiVersion: v1 
+kind: Pod 
+metadata: 
+  name: pod-1
+  labels: 
+    app: primeiro-pod
+spec: 
+  containers:
+    - name: container-pod-1
+      image: nginx:latest
+      ports: 
+        - containerPort: 80
+```
+`svc-pod-1.yaml`
+* `port: 80` porta roda o serviço.
+* `nodePort: 3000` porta para acesso externo.
+* `app: primeiro-pod` label de identificação.
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-pod-1
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      nodePort: 30000
+  selector:
+    app: primeiro-pod
+```
+Aplicando a alteração.
+```
+kubectl apply -f k8s/pod-1.yaml
+kubectl apply -f k8s/svc-pod-1.yaml
+```
+Buscando o caminho para acessar o serviço.
+```
+kubectl get svc -o wide
+```
+No `PORT(S)` vai mostrar que o serviço está sendo executado na porta 80 mapeando para porta 30000.
+```
+kubectl get nodes -o wide
+```
+No `INTERNAL-IP` vai mostrar o IP para acessar a aplicação.
+* **Linux**: Pegar o INTERNAL-IP:30000
+* **Windows**: http://localhost:30000
+
+## Load Balancer
+Serviço para aplicações na nuvem. Abre a comunicação para o mundo externo usando o load balancer do provedor.<br>
+`svc-load-balancer.yaml`
+* `port: 80` porta roda o serviço.
+* `nodePort: 3000` porta para acesso externo.
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-pod-1-loadbalancer
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    nodePort: 30000
+  selector:
+    app: primeiro-pod
+```
 
 # Comandos
 
@@ -90,8 +211,9 @@ kubectl apply -f k8s/pod.yaml
 | kubectl exec -it < nome do pod > -- bash | Entra no modo interativo |
 | kubectl get po | Mostra os pods ativos |
 | kubectl get pods --watch | Acompanhar os pods |
-| kubectl get po -o wide | Mostra mais informações |
-
+| kubectl get pods -o wide | Mostra mais informação dos pods |
+| kubectl get po -o wide | Mostra mais informações dos pods |
+| kubectl get svc -o wide | Mostra mais informação dos services |
 
 # Comando de Configurações
 | **Comandos** | **Descrição** |
