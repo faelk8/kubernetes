@@ -28,12 +28,13 @@ Itens estudados:
 * TSL
 
 # 02.01-basico
-Site de notícias
+Site de notícias.
 * Pod 
 * Service
 * ConfigMap
 
-# 02.02-basico
+# 02.02-refatorando
+Site de notícias.
 * ReplicaSets
 * Deployments
 * Persistência
