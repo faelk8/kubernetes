@@ -1,0 +1,15 @@
+apiVersion: v1 
+kind: Pod 
+metadata:
+  name: pod-storage-class
+spec: 
+  containers:
+    - name: nginx-container
+      image: nginx:latest
+      volumeMounts:
+        - mountPath: /volume-dentroo-do-container
+          name: meu-pvc
+  volumes: 
+    - name: meu-pvc
+      persistentVolumeClaim:
+        claimName: storage-class-persistent

@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: statefulset-portal-noticias
+spec:
+  selector:
+    matchLabels:
+      app: portal-noticias
+  serviceName: svc-sistema-noticias
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: portal-noticias
+      name: portal-noticias
+    spec:
+      containers:
+        - name: portal-noticias-container
+          image: aluracursos/portal-noticias:1
+
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: portal-configmap
+          
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+            initialDelaySeconds: 20
+          
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 5
+            initialDelaySeconds: 3
+
+          resource:
+            requests:
+              cpu: 500m
+
+          volumeMounts:
+            - name: imagens 
+              mountPath: /var/www/html/uploads
+            - name: sessao
+              mountPath: /tmp
+      volumes: 
+        - name: imagens
+          persistentVolumeClaim:
+            claimName: pvc-imagem
+        - name: sessao
+          persistentVolumeClaim:
+            claimName: pvc-sessao
