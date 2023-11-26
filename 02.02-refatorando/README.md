@@ -41,11 +41,3 @@ Fornecem uma maneira flexível de definir as propriedades do armazenamento no Ku
 | kubectl get replicasets | Mostra  os replicasets |
 | kubectl rollout history deployment < nome do deployment > | Mostra a versão do deployment |
 | kubectl rollout undo deployment < nome do deployment > --to-revision=2 | Vouta para a versão 2 |
-
-
-# Comando de Configurações
-| **Comandos** | **Descrição** |
-|----------|---------------|
-| cat ~/.kube/config | Mostra as configurações |
-| kubectl config view| Mostra as configurações do cluster do name space default |
-
