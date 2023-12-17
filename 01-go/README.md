@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="image/k8s-logo.png" alt="Kubernetes" width=120px height=120px >
+  <img src="../image/k8s-logo.png" alt="Kubernetes" width=120px height=120px >
   <br>
   Kubernetes - Gerenciando um Server em Go
 </h1>
