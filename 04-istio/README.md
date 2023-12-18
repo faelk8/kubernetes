@@ -53,14 +53,50 @@ spec:
 ```
 
 # Observabilidade
+Instalando Jaeger:
 
 ```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/addons/jaeger.yaml
+```
+
+Instalando Kiali:
+```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/addons/kiali.yaml
+```
+Instalando Promethues:
+```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/addons/prometheus.yaml
+```
+Instalando Grafana:
+```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/addons/grafana.yaml
 ```
-Abrindo o dashboard
+Abrindo o dashboard:
 ```
 istioctl dashboard kiali
+```
+
+# Conceitos Básicos
+* Ingress ateway: Gerencia a entrada e a saída. Trabalha nos layes 4-6, garantindo o gerenciadomento de portas, host, e TLS. É concectado diretamente a um Virtual Service que será responsável pelo roteamento. Faz as requisiçôes de fora do cluster.
+* Virtual Service: Permite configurar como as requisições serão roteadas para um serviço. Possoui uma série de regras que quando aplicadas farão com que a requisição seja direcioanda ao destino correto. Funciona como um roteador.
+  * Roteamento
+  * Subsets
+  * Fault Injection
+  * Retries
+  * Timeout
+* Destination Rules: Roteia o trágefo para um destino, então, usa as destination rules para configurar o que acontece com o tráfego quando chaga naquele destino.
+
+# Circuit Breaking
+Baixando:
+```
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/httpbin/sample-client/fortio-deploy
+.yaml
+```
+Variável de ambiente:
+```
+export FORTIO_POD=$(kubectl get pods -l app=fortio -o 'jsonpath={.items[0].metadata.name}')
+```
+Executando o teste:
+```
+exec "$FORTIO_POD" -c fortio -- fortio load -c 2 -qps 0 -t 200s -loglevel Warning http://nginx-service:8000
 ```

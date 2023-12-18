@@ -3,6 +3,7 @@ kind: Deployment
 metadata:
   name: nginx
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app: nginx
@@ -10,6 +11,7 @@ spec:
     metadata:
       labels:
         app: nginx
+        version: A
     spec:
       containers:
       - name: nginx
@@ -20,3 +22,44 @@ spec:
             cpu: "500m"
         ports:
         - containerPort: 80
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+        version: B
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 80
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: nginx
+  ports:
+  - port: 8000
+    targetPort: 80
+    nodePort: 30000 
