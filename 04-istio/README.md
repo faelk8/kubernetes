@@ -86,11 +86,15 @@ istioctl dashboard kiali
   * Timeout
 * Destination Rules: Roteia o trágefo para um destino, então, usa as destination rules para configurar o que acontece com o tráfego quando chaga naquele destino.
 
+# Solicitação
+```
+while true; do curl http://localhost:8000; echo; sleep 0.5; done;
+```
+
 # Circuit Breaking
 Baixando:
 ```
-kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/httpbin/sample-client/fortio-deploy
-.yaml
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/httpbin/sample-client/fortio-deploy.yaml
 ```
 Variável de ambiente:
 ```
@@ -100,3 +104,14 @@ Executando o teste:
 ```
 exec "$FORTIO_POD" -c fortio -- fortio load -c 2 -qps 0 -t 200s -loglevel Warning http://nginx-service:8000
 ```
+
+# Virtual Service e Destination Rule
+O `virtual-service.yaml` recebe a requisição e envia de acordo com as configurações onde o `destination-rule.yml` vai encaminhar para os pods.
+
+#
+
+#
+
+#
+
+#
