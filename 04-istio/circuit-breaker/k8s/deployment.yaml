@@ -1,65 +1,66 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-a
+  name: servicex
 spec:
-  replicas: 1
   selector:
     matchLabels:
-      app: nginx
+      app: servicex
   template:
     metadata:
       labels:
-        app: nginx
-        version: A
+        app: servicex
+        version: "200"
     spec:
       containers:
-      - name: nginx
-        image: faelk8/nginx:a
+      - name: servicex
+        image: faelk8/circuit-breaker-go
         resources:
           limits:
             memory: "128Mi"
             cpu: "500m"
         ports:
-        - containerPort: 80
+        - containerPort: 8000
 
 ---
 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-b
+  name: servicex-error
 spec:
-  replicas: 1
   selector:
     matchLabels:
-      app: nginx
+      app: servicex
   template:
     metadata:
       labels:
-        app: nginx
-        version: B
+        app: servicex
+        version: "504"
     spec:
       containers:
-      - name: nginx
-        image: faelk8/nginx:b
+      - name: servicex
+        image: faelk8/circuit-breaker-go:error-504
         resources:
           limits:
             memory: "128Mi"
             cpu: "500m"
         ports:
-        - containerPort: 80
+        - containerPort: 8000
+        env:
+          - name: error
+            value: "yes"
 
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-service
+  name: servicex-service
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
-    app: nginx
+    app: servicex 
   ports:
-  - port: 8000 
-    targetPort: 80
-    nodePort: 30000
+  - port: 80
+    targetPort: 8000

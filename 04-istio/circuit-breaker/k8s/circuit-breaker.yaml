@@ -1,0 +1,13 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: circuit-breaker-servicex
+spec:
+  host: servicex-service.default.svc.cluster.local # caminho completo
+  trafficPolicy:
+    outlierDetection:
+      # consecutive5xxErrors: 20 # abre se tiver 20 erro consecutivos qualquer erro 500
+      consecutiveGatewayErrors: 10 # timeout
+      interval: 20s
+      baseEjectionTime: 30s # depopis de 30 segundos volta a mandar trafego
+      maxEjectionPercent: 100 # remove 100% dos pods

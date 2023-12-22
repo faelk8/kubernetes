@@ -4,10 +4,18 @@ metadata:
   name: nginx-dr
 spec:
   host: nginx-service
-  subset:
-    - name: v1 
+  trafficPolicy:
+    loadBalancer:
+      simple: ROUND_ROBIN
+
+  subsets:
+    - name: v1
       labels:
         version: A
-    - name: v2 
-      labels: 
+      trafficPolicy:
+        loadBalancer:
+          simple: LEAST_CONN
+
+    - name: v2
+      labels:
         version: B
