@@ -11,6 +11,32 @@
 
 </div>
 
+# Istio - Plataforma de Serviço de Malha para Kubernetes
+
+O Istio é uma plataforma de serviço de malha open-source projetada para simplificar o gerenciamento de comunicações entre os serviços em ambientes distribuídos, especialmente em arquiteturas baseadas em microserviços. Quando integrado com Kubernetes, o Istio oferece uma variedade de funcionalidades essenciais.
+
+## Funcionalidades Principais
+
+* **Gerenciamento de Tráfego:** Controle flexível sobre o roteamento, distribuição de carga e implantação gradual.
+
+* **Observabilidade:** Monitoramento avançado, rastreamento e logging para facilitar a detecção e resolução de problemas.
+
+* **Segurança:** Adição de uma camada de segurança à comunicação entre serviços, incluindo autenticação mútua e criptografia de ponta a ponta.
+
+* **Controle de Acesso e Políticas de Rede:** Definição de políticas de rede e controle de acesso para regular as comunicações entre os serviços.
+
+* **Injeção de Sidecar:** Uso do padrão de sidecar para gerenciar comunicações entre serviços, com um proxy injetado automaticamente em cada contêiner.
+
+* **Resiliência:** Recursos para tornar sistemas mais resilientes, incluindo circuit breaking e retries automáticos.
+
+* **Monitoramento e Relatórios:** Facilita o monitoramento contínuo e a geração de relatórios sobre o tráfego e desempenho dos serviços.
+
+## Integração 
+
+- Prometheus
+- Grafana
+- Jaeger
+
 
 # Conceitos Básicos
 <div align="center">
@@ -19,7 +45,7 @@
 
 * Ingress Gateway: Gerencia a entrada e a saída. Trabalha nos layes 4-6, garantindo o gerenciadomento de portas, host, e TLS. É concectado diretamente a um Virtual Service que será responsável pelo roteamento. Faz as requisiçôes de fora do cluster.
 * Virtual Service: Permite configurar como as requisições serão roteadas para um serviço. Possoui uma série de regras que quando aplicadas farão com que a requisição seja direcioanda ao destino correto. Funciona como um roteador.
-  * Roteamentoddo tráfego
+  * Roteamento do tráfego
   * Subsets
   * Fault Injection
   * Retries
@@ -81,7 +107,7 @@ kubectl get svc -n istio-system
 ```
 
 # Instalando o Sidecar Proxy
-Precisa de um outro container rodando para que todo o tráfego passe pelo proxy, onde as regras do Istio serão aplicadas.
+Por padrão utiliza 1 container por pod. Neste caso temos 2 containers por pods. O Segundo container genrencia todo o tráfego que passa pelo proxy, onde as regras do Istio serão aplicadas.
 ```
 kubectl label namespace default istio-injection=enabled
 ```
@@ -137,7 +163,7 @@ istioctl dashboard kiali
 ```
 
 # Solicitação
-Comando para fazer acesso no serviço:
+Comando para fazer acesso no serviço em quanto a condição for verdadeira:
 ```
 while true; do curl http://localhost:8000; echo; sleep 0.5; done;
 ```
@@ -185,7 +211,7 @@ spec:
 ```
 
 # Solicitação v2 
-Executa acessos por 200 segundos.
+Executa acessos por 200 segundos.<br>
 Baixando:
 ```
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.20/samples/httpbin/sample-client/fortio-deploy.yaml
@@ -194,13 +220,13 @@ Variável de ambiente que pega o pod fortio:
 ```
 export FORTIO_POD=$(kubectl get pods -l app=fortio -o 'jsonpath={.items[0].metadata.name}')
 ```
-Executando o teste:
+Executando0 o teste utilizando a variável de ambiente:
 ```
 kubectl exec "$FORTIO_POD" -c fortio -- fortio load -c 2 -qps 0 -t 200s -loglevel Warning http://nginx-service:8000
 ```
 
 # Tipos de Load Balancer
-Quando se tem várias réplicas é possível escolher o tipo de load balancer. Como neste exemplo temos versões diferentes podemos escolher quantas réplicas quisermos, podemos também, escolher o tipo de load balancer para cada versão do serviço.<br>
+Quando se tem várias réplicas é possível escolher o tipo de load balancer. Como neste exemplo temos versões diferentes, podemos escolher quantas réplicas quisermos, podemos também, escolher o tipo de load balancer para cada versão do serviço.<br>
 Por padrão é o `Round Robin` que tenta manter a quantidade de solicitações de forma mais igualitária.
 
 `destination-rule.yaml`
@@ -227,9 +253,16 @@ spec:
       labels:
         version: B
 ```
+* **Round Robin**: Distribui as solicitações de maneira uniforme entre os pods disponíveis. Cada nova solicitação é encaminhada para o próximo pod na lista. É uma abordagem simples e eficaz para equilibrar a carga, garantindo que todos os pods tenham a oportunidade de processar solicitações.
+* **Least Connections**: Direciona as solicitações para o pod que tem o menor número atual de conexões ativas. Ele tenta distribuir a carga de maneira proporcional à capacidade de processamento de cada pod. Útil quando os pods têm capacidades de processamento variáveis e desejamos otimizar a distribuição de carga com base na carga real.
+* **IP Hash**: utiliza o endereço IP do cliente para determinar a qual pod enviar a solicitação. Isso garante que as solicitações do mesmo cliente sejam sempre enviadas para o mesmo pod. Útil em cenários onde a persistência de sessão é importante e as sessões precisam ser tratadas pelo mesmo pod para manter o estado.
+* **Random**: Este método escolhe aleatoriamente um pod disponível para encaminhar a solicitação. Pode ser útil em alguns casos, mas pode não ser a melhor escolha se a uniformidade na distribuição de carga for uma prioridade.
+* **Weighted Round Robin e Weighted Least Connections**: Estas variações atribuem pesos diferentes aos pods, influenciando a probabilidade de serem selecionados. Pods com pesos mais altos têm maior probabilidade de serem escolhidos. Permite ajustar a distribuição de carga com base nas capacidades de processamento dos pods.
 
 # Stick Session
 Consistent Hash.<br>
+Persistência dos dados.<br>
+Refere a persistência da sessão, garante que cada requisição do usuário sempre seja enviada para o mesmo pod.
 **Não funciona trabalhando com weight**
 * httpHeaderName
 * httpCookie
@@ -293,7 +326,7 @@ kubectl exec "$FORTIO_POD" -c fortio -- fortio load -c 2 -qps 0 -t 10s -loglevel
 ```
 
 # Circuit Breaker
-No cenário em que o microsserviço A chama o microsserviço B e por sua vez chama o C. O C não consegue processar os dados gerando lentidão nos serviços até o ponto de falhar toda a aplicação. Como proteção o serivoço C pode enviar um erro 503 por exemplo por 10 segundos como resposta em quanto ele se recupera. Quando passar o tempo e o serviço continuar lento o envio vai ser de 20 segundos. O tempo vai dobrando até o microsserviço se recuperar. 
+No cenário em que o microsserviço `A` chama o microsserviço `B` e por sua vez chama o `C`. O `C` não consegue processar os dados gerando lentidão nos serviços até o ponto de falhar toda a aplicação. Como proteção o serivoço `C` pode enviar um erro 503 por exemplo por 10 segundos como resposta em quanto ele se recupera. Quando passar o tempo e o serviço continuar lento o envio vai ser de 20 segundos. O tempo vai dobrando até o microsserviço se recuperar. 
 
 * consecutive5xxErrors
 * consecutiveGatewayErrors
@@ -373,9 +406,11 @@ spec:
         version: B
 
 ```
+Para funcionar localmente precisa editar a porta:
 ```
 kubectl edit svc istio-ingressgateway -n istio-system 
 ```
+Na nuvem não precisar, para acessar utilizaria o `EXTERNAL-IP` junto com a porta do serviço.
 
 # Trabalhando com Prefixos
 `gateway.yml`
@@ -407,8 +442,6 @@ spec:
         subset: v1
 ```
 Acessando `localhost:8000/b` vai aparecer erro 404.
-
-# Domínios
 
 # Comandos
 
