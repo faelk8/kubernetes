@@ -1,0 +1,28 @@
+executor: KubernetesExecutor
+defaultAirflowRepository: airflow-alura
+defaultAirflowTag: latest
+
+dags:
+  persistence:
+    enabled: true
+    existingClaim: airflow-dags-claim
+
+workers.replicas: 0
+redis.enabled: false
+
+securityContext:
+  fsGroup: 0
+  runAsGroup: 0
+  runAsUser: 0
+
+logs:
+  persistence:
+    enabled: true
+    existingClaim: airflow-logs-claim
+
+
+config:
+  webserver:
+    expose_config: 'True'
+  core:
+    parallelism: 16
